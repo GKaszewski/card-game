@@ -1,29 +1,54 @@
-import React, {useRef, useState} from "react";
+import React, {useState} from "react";
 import './style.css';
+import {Card} from "../../utils/types/Card";
+import {useAppDispatch, useAppSelector} from "../../redux/hooks";
+import {
+    addEnemyCardToArena,
+    addPlayerCardToArena,
+    removeEnemyCard, removeEnemyCardFromArena,
+    removePlayerCardFromArena
+} from "../../redux/slices/cardsSlice";
 
-interface Props extends React.HTMLAttributes<HTMLDivElement> {
-    Animal: any;
-    description?: string;
-    attackPoints?: number;
-    healthPoints?: number;
-    cost?: number;
-    flipped?: boolean;
+interface Props extends Card {
+    isPlayer?: boolean;
 }
 
-const Card: React.FC<Props> = ({Animal, description, attackPoints, healthPoints, cost, flipped}) => {
+const CardComponent: React.FC<Props> = ({
+                                            animal,
+                                            description,
+                                            attackPoints,
+                                            healthPoints,
+                                            cost,
+                                            flipped,
+                                            id,
+                                            isPlayer
+                                        }) => {
+    const dispatch = useAppDispatch()
     const [shouldFlip, setShouldFlip] = useState(flipped);
-    const cardRef = useRef<HTMLDivElement>(null)
+
+    const playerArenaCards = useAppSelector(state => state.cards.playerArenaCards);
+    const enemyArenaCards = useAppSelector(state => state.cards.enemyArenaCards);
 
     const handleOnClick = () => {
-        if (!cardRef.current) return;
-        const card = cardRef.current;
+        if (isPlayer) {
+            if (!playerArenaCards.some(card => card.id === id)) {
+                dispatch(addPlayerCardToArena({animal, description, attackPoints, healthPoints, cost, id}))
+            } else {
+                dispatch(removePlayerCardFromArena({animal, description, attackPoints, healthPoints, cost, id}))
+            }
+        } else {
+            if (!enemyArenaCards.some(card => card.id === id)) {
+                dispatch(addEnemyCardToArena({animal, description, attackPoints, healthPoints, cost, id}))
+            } else {
+                dispatch(removeEnemyCardFromArena({animal, description, attackPoints, healthPoints, cost, id}))
+            }
+        }
 
     }
 
     return <div
         className={`${shouldFlip ? 'flip-card' : ''} select-none card min-w-[8rem] w-32 h-48 bg-gray-300 flex flex-col items-center shadow-lg rounded transform transition ease-in-out md:hover:scale-105`}
-        onClick={handleOnClick}
-        ref={cardRef}>
+        onClick={handleOnClick}>
         <div className="card-inner">
             <div className='card-front flex flex-col'>
                 <div
@@ -39,7 +64,7 @@ const Card: React.FC<Props> = ({Animal, description, attackPoints, healthPoints,
                     <p>{cost || 0}</p>
                 </div>
                 <div className="w-full h-1/2 p-2 mt-4">
-                    <Animal/>
+                    <img src={animal}/>
                 </div>
                 <div
                     className="w-full min-h-[5rem] bg-gray-600/10 shadow rounded p-1 flex flex-wrap text-ellipsis text-sm overflow-hidden justify-center">
@@ -53,4 +78,4 @@ const Card: React.FC<Props> = ({Animal, description, attackPoints, healthPoints,
     </div>
 }
 
-export default Card;
+export default CardComponent;
