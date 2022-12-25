@@ -9,6 +9,10 @@ interface CardsState {
     enemyDeckCards: Card[];
     playerArenaCards: Card[];
     enemyArenaCards: Card[];
+    playerSelectedCard: Card | null;
+    enemySelectedCard: Card | null;
+    playerTargetCard: Card | null;
+    enemyTargetCard: Card | null;
 }
 
 const initialState: CardsState = {
@@ -24,14 +28,26 @@ const initialState: CardsState = {
     playerArenaCards: [],
     enemyDeckCards: [{
         animal: Cat,
-        description: 'Turtle',
-        attackPoints: 1,
+        description: 'Cat',
+        attackPoints: 122,
         healthPoints: 1,
         cost: 1,
         flipped: true,
         id: 5
     }],
-    enemyArenaCards: []
+    enemyArenaCards: [],
+    playerSelectedCard: null,
+    enemySelectedCard: null,
+    playerTargetCard: null,
+    enemyTargetCard: null
+}
+
+export const checkIfCardIsInArena = (cards: Card[], card: Card) => {
+    return cards.some((c) => c.id === card.id);
+}
+
+const checkIfCardIsInDeck = (cards: Card[], card: Card) => {
+    return cards.some((c) => c.id === card.id);
 }
 
 const addCard = (cards: Card[], card: Card) => {
@@ -52,14 +68,27 @@ const addCardToArena = (deckCards: Card[], arenaCards: Card[], card: Card) => {
 
 const removeCardFromArena = (deckCards: Card[], arenaCards: Card[], card: Card) => {
     arenaCards = removeCard(arenaCards, card);
-    deckCards = addCard(deckCards, card);
+    if (!checkIfCardIsInDeck(deckCards, card)) {
+        deckCards = addCard(deckCards, card);
+    }
     return {deckCards, arenaCards};
 }
+
 
 const flipCard = (cards: Card[], card: Card) => {
     cards.map((c) => {
         if (c.id === card.id) {
             c.flipped = !c.flipped;
+        }
+        return c;
+    })
+    return cards;
+}
+
+const setCardHealthPoints = (cards: Card[], card: Card, healthPoints: number) => {
+    cards.map((c) => {
+        if (c.id === card.id) {
+            c.healthPoints = healthPoints;
         }
         return c;
     })
@@ -134,6 +163,36 @@ export const cardsSlice = createSlice({
             state.enemyArenaCards = arenaCards;
             state.enemyDeckCards = deckCards;
             return state
+        },
+        resetCards: (state) => {
+            state = initialState;
+            return state
+        },
+        setSelectedPlayerCard: (state, action: PayloadAction<Card | null>) => {
+            state.playerSelectedCard = action.payload;
+            return state
+        },
+        setSelectedEnemyCard: (state, action: PayloadAction<Card | null>) => {
+            state.enemySelectedCard = action.payload;
+            return state
+        },
+        setPlayerTargetCard: (state, action: PayloadAction<Card | null>) => {
+            state.playerTargetCard = action.payload;
+            return state
+        },
+        setEnemyTargetCard: (state, action: PayloadAction<Card | null>) => {
+            state.enemyTargetCard = action.payload;
+            return state
+        },
+        setPlayerCardHealth: (state, action: PayloadAction<Card>) => {
+            state.playerArenaCards = setCardHealthPoints(state.playerArenaCards, action.payload, action.payload.healthPoints!);
+            state.playerArenaCards = state.playerArenaCards.filter((c) => c.healthPoints! > 0);
+            return state
+        },
+        setEnemyCardHealth: (state, action: PayloadAction<Card>) => {
+            state.enemyArenaCards = setCardHealthPoints(state.enemyArenaCards, action.payload, action.payload.healthPoints!);
+            state.enemyArenaCards = state.enemyArenaCards.filter((c) => c.healthPoints! > 0);
+            return state
         }
     }
 })
@@ -150,11 +209,18 @@ export const {
     flipEnemyDeckCard,
     flipEnemyArenaCard,
     addEnemyCardToArena,
-    removeEnemyCardFromArena
+    removeEnemyCardFromArena,
+    resetCards,
+    setSelectedPlayerCard,
+    setSelectedEnemyCard,
+    setPlayerTargetCard,
+    setEnemyTargetCard,
+    setPlayerCardHealth,
+    setEnemyCardHealth
 } = cardsSlice.actions
 
-export const selectDeckCards = (state: RootState) => state.cards.playerDeckCards
-export const selectArenaCards = (state: RootState) => state.cards.playerArenaCards
+export const selectPlayerDeckCards = (state: RootState) => state.cards.playerDeckCards
+export const selectPlayerArenaCards = (state: RootState) => state.cards.playerArenaCards
 export const selectEnemyDeckCards = (state: RootState) => state.cards.enemyDeckCards
 export const selectEnemyArenaCards = (state: RootState) => state.cards.enemyArenaCards
 
