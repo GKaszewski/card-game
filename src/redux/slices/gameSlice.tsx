@@ -15,6 +15,10 @@ interface GameState {
     enemyMoves: number;
     maxPlayerMoves: number;
     maxEnemyMoves: number;
+    playerHealth: number;
+    enemyHealth: number;
+    playerCash: number;
+    enemyCash: number;
 }
 
 export const initialState: GameState = {
@@ -24,6 +28,10 @@ export const initialState: GameState = {
     enemyMoves: 0,
     maxPlayerMoves: 0,
     maxEnemyMoves: 0,
+    playerHealth: 1,
+    enemyHealth: 1,
+    playerCash: 1,
+    enemyCash: 1,
 }
 
 export const gameSlice = createSlice({
@@ -70,6 +78,22 @@ export const gameSlice = createSlice({
             state.maxEnemyMoves = action.payload;
             return state;
         },
+        setPlayerHealth: (state, action: PayloadAction<number>) => {
+            state.playerHealth = action.payload;
+            return state;
+        },
+        setEnemyHealth: (state, action: PayloadAction<number>) => {
+            state.enemyHealth = action.payload;
+            return state;
+        },
+        setPlayerCash: (state, action: PayloadAction<number>) => {
+            state.playerCash = action.payload;
+            return state;
+        },
+        setEnemyCash: (state, action: PayloadAction<number>) => {
+            state.enemyCash = action.payload;
+            return state;
+        }
     },
 })
 
@@ -84,6 +108,10 @@ export const {
     setEnemyMoves,
     setMaxEnemyMoves,
     setMaxPlayerMoves,
+    setPlayerHealth,
+    setEnemyHealth,
+    setPlayerCash,
+    setEnemyCash
 } = gameSlice.actions;
 
 export default gameSlice.reducer;

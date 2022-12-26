@@ -7,14 +7,14 @@ import {
     addPlayerCardToArena,
     checkIfCardIsInArena,
     removeEnemyCardFromArena,
-    removePlayerCardFromArena, setEnemyTargetCard, setPlayerTargetCard, setSelectedPlayerCard
+    removePlayerCardFromArena, setEnemyTargetCard, setPlayerTargetCard, setSelectedEnemyCard, setSelectedPlayerCard
 } from "../../redux/slices/cardsSlice";
 import {
     decrementEnemyMoves,
     decrementPlayerMoves,
     GameStateEnum,
     incrementEnemyMoves,
-    incrementPlayerMoves
+    incrementPlayerMoves, setEnemyCash, setPlayerCash
 } from "../../redux/slices/gameSlice";
 
 interface Props extends Card {
@@ -42,6 +42,10 @@ const CardComponent: React.FC<Props> = ({
     const selectedEnemyCard = useAppSelector(state => state.cards.enemySelectedCard);
     const playerTargetCard = useAppSelector(state => state.cards.playerTargetCard);
     const enemyTargetCard = useAppSelector(state => state.cards.enemyTargetCard);
+    const usedPlayerCards = useAppSelector(state => state.cards.usedPlayerCards);
+    const usedEnemyCards = useAppSelector(state => state.cards.usedEnemyCards);
+    const playerCash = useAppSelector(state => state.game.playerCash);
+    const enemyCash = useAppSelector(state => state.game.enemyCash);
 
     const currentState = useAppSelector(state => state.game.currentState);
 
@@ -50,29 +54,37 @@ const CardComponent: React.FC<Props> = ({
     }, [flipped])
 
     const handlePlayerClick = () => {
-        if (currentState === GameStateEnum.ENEMY_TURN && enemyMoves > 0) {
+        if (currentState === GameStateEnum.ENEMY_TURN && enemyMoves > 0 && playerArenaCards.some(card => card.id === id)) {
             dispatch(setEnemyTargetCard({animal, description, attackPoints, healthPoints, cost, id}))
         }
         if (currentState !== GameStateEnum.PLAYER_TURN) return;
         if (playerMoves > 0) {
             if (!playerArenaCards.some(card => card.id === id)) {
+                if (playerCash < cost!) return;
                 dispatch(addPlayerCardToArena({animal, description, attackPoints, healthPoints, cost, id}))
                 dispatch(decrementPlayerMoves())
+                dispatch(setPlayerCash(playerCash - cost!))
             } else {
+                if (usedPlayerCards.some(card => card.id === id)) return;
                 dispatch(setSelectedPlayerCard({animal, description, attackPoints, healthPoints, cost, id}))
             }
         }
     }
 
     const handleEnemyClick = () => {
-        if (currentState === GameStateEnum.PLAYER_TURN && playerMoves > 0) {
+        if (currentState === GameStateEnum.PLAYER_TURN && playerMoves > 0 && enemyArenaCards.some(card => card.id === id)) {
             dispatch(setPlayerTargetCard({animal, description, attackPoints, healthPoints, cost, id}))
         }
         if (currentState !== GameStateEnum.ENEMY_TURN) return;
         if (enemyMoves > 0) {
             if (!enemyArenaCards.some(card => card.id === id)) {
+                if (enemyCash < cost!) return;
                 dispatch(addEnemyCardToArena({animal, description, attackPoints, healthPoints, cost, id}))
                 dispatch(decrementEnemyMoves())
+                dispatch(setEnemyCash(enemyCash - cost!))
+            } else {
+                if (usedEnemyCards.some(card => card.id === id)) return;
+                dispatch(setSelectedEnemyCard({animal, description, attackPoints, healthPoints, cost, id}))
             }
         }
     }
@@ -81,12 +93,14 @@ const CardComponent: React.FC<Props> = ({
         if (currentState !== GameStateEnum.PLAYER_TURN) return;
         dispatch(removePlayerCardFromArena({animal, description, attackPoints, healthPoints, cost, id}))
         dispatch(incrementPlayerMoves())
+        dispatch(setPlayerCash(playerCash + cost!))
     }
 
     const hideEnemyCard = () => {
         if (currentState !== GameStateEnum.ENEMY_TURN) return;
         dispatch(removeEnemyCardFromArena({animal, description, attackPoints, healthPoints, cost, id}))
         dispatch(incrementEnemyMoves())
+        dispatch(setEnemyCash(enemyCash + cost!))
     }
 
     if (isPlayer) {
@@ -118,8 +132,8 @@ const CardComponent: React.FC<Props> = ({
                         className="w-8 h-8 bg-amber-300 rounded-full flex items-center justify-center p-1 shadow-lg absolute bottom-0 left-1/2 right-1/2 transform -translate-x-1/2">
                         <p>{cost || 0}</p>
                     </div>
-                    <div className="w-full h-1/2 p-2 mt-4">
-                        <img src={animal}/>
+                    <div className="w-full h-1/2 p-2 mt-4 select-none">
+                        <img className="select-none" src={animal}/>
                     </div>
                     <div
                         className="w-full min-h-[5rem] bg-gray-600/10 shadow rounded p-1 flex flex-wrap text-ellipsis text-sm overflow-hidden justify-center">

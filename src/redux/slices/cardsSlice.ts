@@ -13,6 +13,8 @@ interface CardsState {
     enemySelectedCard: Card | null;
     playerTargetCard: Card | null;
     enemyTargetCard: Card | null;
+    usedPlayerCards: Card[];
+    usedEnemyCards: Card[];
 }
 
 const initialState: CardsState = {
@@ -39,7 +41,9 @@ const initialState: CardsState = {
     playerSelectedCard: null,
     enemySelectedCard: null,
     playerTargetCard: null,
-    enemyTargetCard: null
+    enemyTargetCard: null,
+    usedPlayerCards: [],
+    usedEnemyCards: []
 }
 
 export const checkIfCardIsInArena = (cards: Card[], card: Card) => {
@@ -193,6 +197,14 @@ export const cardsSlice = createSlice({
             state.enemyArenaCards = setCardHealthPoints(state.enemyArenaCards, action.payload, action.payload.healthPoints!);
             state.enemyArenaCards = state.enemyArenaCards.filter((c) => c.healthPoints! > 0);
             return state
+        },
+        setUsedPlayerCards: (state, action: PayloadAction<Card[]>) => {
+            state.usedPlayerCards = action.payload;
+            return state
+        },
+        setUsedEnemyCards: (state, action: PayloadAction<Card[]>) => {
+            state.usedEnemyCards = action.payload;
+            return state
         }
     }
 })
@@ -216,7 +228,9 @@ export const {
     setPlayerTargetCard,
     setEnemyTargetCard,
     setPlayerCardHealth,
-    setEnemyCardHealth
+    setEnemyCardHealth,
+    setUsedPlayerCards,
+    setUsedEnemyCards
 } = cardsSlice.actions
 
 export const selectPlayerDeckCards = (state: RootState) => state.cards.playerDeckCards

@@ -8,22 +8,24 @@ import {useAppDispatch, useAppSelector} from "./redux/hooks";
 import {
     addEnemyCard,
     addPlayerCard,
-    setEnemyCardHealth, setEnemyTargetCard, setPlayerTargetCard,
+    setEnemyCardHealth, setEnemyTargetCard, setPlayerCardHealth, setPlayerTargetCard,
     setSelectedEnemyCard,
-    setSelectedPlayerCard
+    setSelectedPlayerCard, setUsedEnemyCards, setUsedPlayerCards
 } from "./redux/slices/cardsSlice";
 
 import dog from './svgs/Dog.svg';
 import turtle from './svgs/Turtle.svg';
 import {
+    decrementEnemyMoves,
     decrementPlayerMoves,
     GameStateEnum,
-    setCurrentState,
+    setCurrentState, setEnemyCash,
     setEnemyMoves, setMaxEnemyMoves,
-    setMaxPlayerMoves,
+    setMaxPlayerMoves, setPlayerCash,
     setPlayerMoves,
     setPlayerTurn
 } from "./redux/slices/gameSlice";
+import HeroCard from "./components/HeroCard";
 
 function App() {
     const playerDeckCards = useAppSelector(state => state.cards.playerDeckCards);
@@ -36,9 +38,12 @@ function App() {
     const selectedEnemyCard = useAppSelector(state => state.cards.enemySelectedCard);
     const playerTargetCard = useAppSelector(state => state.cards.playerTargetCard);
     const enemyTargetCard = useAppSelector(state => state.cards.enemyTargetCard);
+    const usedPlayerCards = useAppSelector(state => state.cards.usedPlayerCards);
+    const usedEnemyCards = useAppSelector(state => state.cards.usedEnemyCards);
+    const playerCash = useAppSelector(state => state.game.playerCash);
+    const enemyCash = useAppSelector(state => state.game.enemyCash);
 
     const currentState = useAppSelector(state => state.game.currentState);
-
     const dispatch = useAppDispatch();
 
     useEffect(() => {
@@ -71,12 +76,20 @@ function App() {
         dispatch(setPlayerTurn(false))
         dispatch(setCurrentState(GameStateEnum.ENEMY_TURN))
         calculateEnemyMoves()
+        dispatch(setUsedPlayerCards([]))
+        dispatch(setSelectedPlayerCard(null))
+        dispatch(setPlayerTargetCard(null))
+        dispatch(setPlayerCash(playerCash + 1))
     }
 
     const endEnemyTurn = () => {
         calculatePlayerMoves()
         dispatch(setCurrentState(GameStateEnum.PLAYER_TURN))
         dispatch(setPlayerTurn(true))
+        dispatch(setUsedEnemyCards([]))
+        dispatch(setSelectedEnemyCard(null))
+        dispatch(setEnemyTargetCard(null))
+        dispatch(setEnemyCash(enemyCash + 1))
     }
 
     const startGame = () => {
@@ -88,20 +101,33 @@ function App() {
     const playerAttack = () => {
         if (playerMoves <= 0 || !playerTargetCard) return
         dispatch(decrementPlayerMoves())
-        const healthPoints = enemyTargetCard?.healthPoints! - selectedPlayerCard?.attackPoints!;
-        const enemyCard = {...playerTargetCard, healthPoints}
+        const enemyHealthPoints = playerTargetCard?.healthPoints! - selectedPlayerCard?.attackPoints!;
+        const enemyCard = {...playerTargetCard!, healthPoints: enemyHealthPoints}
         dispatch(setEnemyCardHealth(enemyCard))
+        if (enemyHealthPoints > 0) {
+            const playerHealthPoints = selectedPlayerCard?.healthPoints! - playerTargetCard?.attackPoints!;
+            const playerCard = {...selectedPlayerCard!, healthPoints: playerHealthPoints}
+            dispatch(setPlayerCardHealth(playerCard))
+        }
         dispatch(setSelectedPlayerCard(null))
         dispatch(setPlayerTargetCard(null))
+        if (selectedPlayerCard?.healthPoints! > 0) dispatch(setUsedPlayerCards([...usedPlayerCards, selectedPlayerCard!]))
     }
 
     const enemyAttack = () => {
         if (enemyMoves <= 0 || !enemyTargetCard) return
-        const healthPoints = playerTargetCard?.healthPoints! - selectedEnemyCard?.attackPoints!;
-        const playerCard = {...enemyTargetCard, healthPoints}
-        dispatch(setEnemyCardHealth(playerCard))
+        dispatch(decrementEnemyMoves())
+        const playerHealthPoints = enemyTargetCard.healthPoints! - selectedEnemyCard?.attackPoints!;
+        const playerCard = {...enemyTargetCard, healthPoints: playerHealthPoints}
+        dispatch(setPlayerCardHealth(playerCard))
+        if (playerHealthPoints > 0) {
+            const enemyHealthPoints = selectedEnemyCard?.healthPoints! - enemyTargetCard?.attackPoints!;
+            const enemyCard = {...selectedEnemyCard!, healthPoints: enemyHealthPoints}
+            dispatch(setEnemyCardHealth(enemyCard))
+        }
         dispatch(setSelectedEnemyCard(null))
         dispatch(setEnemyTargetCard(null))
+        if (selectedEnemyCard?.healthPoints! > 0) dispatch(setUsedEnemyCards([...usedEnemyCards, selectedEnemyCard!]))
     }
 
     return (
@@ -117,22 +143,26 @@ function App() {
             </button>}
 
             <CardsTable>
+                <HeroCard isPlayer={false} />
+                <span className="min-w-[2px] h-full bg-gray-500 shadow" />
                 {enemyDeckCards.map((card, index) => <CardComponent key={`enemyDeckCard-${index}`} {...card}
                                                                     isPlayer={false}/>)}
             </CardsTable>
             <FightArena/>
             <CardsTable>
+                <HeroCard isPlayer />
+                <span className="min-w-[2px] h-full bg-gray-500 shadow" />
                 {playerDeckCards.map((card, index) => <CardComponent key={`playerDeckCard-${index}`} {...card}
                                                                      isPlayer/>)}
             </CardsTable>
-            {(currentState == GameStateEnum.PLAYER_TURN) &&
+            {(currentState === GameStateEnum.PLAYER_TURN) &&
                 <div className="flex flex-col absolute top-1/2 right-0 m-2 gap-1">
                     {playerTargetCard && <button className="bg-red-500 rounded p-2 shadow-2xl hover:bg-red-600"
                                                  onClick={playerAttack}>Attack</button>}
                     <button className="bg-red-500 rounded p-2 shadow-2xl hover:bg-red-600"
                             onClick={endPlayerTurn}>End turn</button>
                 </div>}
-            {(currentState == GameStateEnum.ENEMY_TURN) &&
+            {(currentState === GameStateEnum.ENEMY_TURN) &&
                 <div className="flex flex-col absolute top-1/2 right-0 m-2 gap-1">
                     {enemyTargetCard && <button className="bg-red-500 rounded p-2 shadow-2xl hover:bg-red-600"
                                                  onClick={enemyAttack}>Attack</button>}
